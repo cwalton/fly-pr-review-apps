@@ -68,13 +68,18 @@ if [ -n "$INPUT_POSTGRES" ]; then
   flyctl postgres attach "$INPUT_POSTGRES" --app "$app" || true
 fi
 
+# Destroy all Fly machines for the given app
+fly machines list --app "$app" --json \
+  | jq -r '.[].id' \
+  | while IFS= read -r id; do
+      fly machines destroy --app "$app" "$id"
+    done
+
 # Trigger the deploy of the new version.
 echo "Contents of config $config file: " && cat "$config"
 if [ -n "$INPUT_VMSIZE" ]; then
-  fly machines destroy --force --app "$app" $(fly machines list --app "$app" --json | jq -r '[.[].id] | join(" ")')
   flyctl deploy --config "$config" --app "$app" --regions "$region" --image "$image" --strategy immediate --ha=$INPUT_HA ${build_args} ${build_secrets} --vm-size "$INPUT_VMSIZE"
 else
-  fly machines destroy --force --app "$app" $(fly machines list --app "$app" --json | jq -r '[.[].id] | join(" ")')
   flyctl deploy --config "$config" --app "$app" --regions "$region" --image "$image" --strategy immediate --ha=$INPUT_HA ${build_args} ${build_secrets} --vm-cpu-kind "$INPUT_CPUKIND" --vm-cpus $INPUT_CPU --vm-memory "$INPUT_MEMORY"
 fi
 
