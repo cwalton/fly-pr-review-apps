@@ -72,7 +72,7 @@ fi
 fly machines list --app "$app" --json \
   | jq -r '.[].id' \
   | while IFS= read -r id; do
-      fly machines destroy --app "$app" "$id"
+      fly machines destroy --force --app "$app" "$id"
     done
 
 # Trigger the deploy of the new version.
